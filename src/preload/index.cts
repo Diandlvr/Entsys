@@ -8,7 +8,19 @@ import { contextBridge, ipcRenderer } from 'electron';
 const api = {
   visitas: {
     dentroAhora: () => ipcRenderer.invoke('visitas:dentroAhora'),
+    dentroAhoraDeDiasAnteriores: () => ipcRenderer.invoke('visitas:dentroAhoraDeDiasAnteriores'),
     crear: (datos: unknown) => ipcRenderer.invoke('visitas:crear', datos),
+    marcarSalida: (id: number, horaSalida?: string) =>
+      ipcRenderer.invoke('visitas:marcarSalida', id, horaSalida),
+    deshacerSalida: (id: number) => ipcRenderer.invoke('visitas:deshacerSalida', id),
+    marcarSalidaEnLote: (ids: number[], horaSalida?: string) =>
+      ipcRenderer.invoke('visitas:marcarSalidaEnLote', ids, horaSalida),
+    ultimaVisitaPorDocumento: (documento: string) =>
+      ipcRenderer.invoke('visitas:ultimaVisitaPorDocumento', documento),
+    sugerencias: (campo: 'destino' | 'a_quien_visita', textoParcial: string) =>
+      ipcRenderer.invoke('visitas:sugerencias', campo, textoParcial),
+    eliminar: (id: number) => ipcRenderer.invoke('visitas:eliminar', id),
+    restaurarEliminada: (visita: unknown) => ipcRenderer.invoke('visitas:restaurarEliminada', visita),
   },
   ajustes: {
     leer: () => ipcRenderer.invoke('ajustes:leer'),

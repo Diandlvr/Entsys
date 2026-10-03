@@ -1,35 +1,41 @@
 import { useEffect, useState } from 'react';
+import { BarraLateral } from './componentes/BarraLateral.js';
+import type { Seccion } from './componentes/BarraLateral.js';
+import { ProveedorToast } from './componentes/ui/Toast.js';
+import { PantallaRegistro } from './pantallas/Registro/PantallaRegistro.js';
+import { PantallaHistorial } from './pantallas/Historial/PantallaHistorial.js';
+import { PantallaAjustes } from './pantallas/Ajustes/PantallaAjustes.js';
 
-/**
- * Pantalla temporal de la etapa (a): solo confirma que el renderer puede hablar
- * con el proceso principal y leer la base de datos a través del preload.
- * Las pantallas reales (Registro, Historial, Ajustes) se construyen en las
- * siguientes etapas.
- */
 export default function App() {
-  const [estado, setEstado] = useState<'cargando' | 'ok' | 'error'>('cargando');
-  const [cantidadDentro, setCantidadDentro] = useState(0);
+  const [seccion, setSeccion] = useState<Seccion>('registro');
 
+  // Atajos de teclado globales: Ctrl+N va a Registro, Ctrl+F a Historial.
   useEffect(() => {
-    window.api.visitas
-      .dentroAhora()
-      .then((visitas: unknown[]) => {
-        setCantidadDentro(visitas.length);
-        setEstado('ok');
-      })
-      .catch(() => setEstado('error'));
+    function alPresionarTecla(evento: KeyboardEvent) {
+      const conCtrl = evento.ctrlKey || evento.metaKey;
+      if (!conCtrl) return;
+      if (evento.key.toLowerCase() === 'n') {
+        evento.preventDefault();
+        setSeccion('registro');
+      } else if (evento.key.toLowerCase() === 'f') {
+        evento.preventDefault();
+        setSeccion('historial');
+      }
+    }
+    window.addEventListener('keydown', alPresionarTecla);
+    return () => window.removeEventListener('keydown', alPresionarTecla);
   }, []);
 
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="rounded-lg border border-slate-200 p-8 text-center dark:border-slate-700">
-        <h1 className="text-2xl font-semibold">Registro de Visitas</h1>
-        <p className="mt-2 text-slate-500 dark:text-slate-400">
-          {estado === 'cargando' && 'Conectando con la base de datos…'}
-          {estado === 'ok' && `Conectado. Personas dentro ahora: ${cantidadDentro}.`}
-          {estado === 'error' && 'No se pudo conectar con la base de datos.'}
-        </p>
+    <ProveedorToast>
+      <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+        <BarraLateral seccionActiva={seccion} onCambiarSeccion={setSeccion} />
+        <main className="flex-1 overflow-y-auto">
+          {seccion === 'registro' && <PantallaRegistro />}
+          {seccion === 'historial' && <PantallaHistorial />}
+          {seccion === 'ajustes' && <PantallaAjustes />}
+        </main>
       </div>
-    </div>
+    </ProveedorToast>
   );
 }
