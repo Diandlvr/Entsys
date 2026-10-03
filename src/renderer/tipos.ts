@@ -4,3 +4,5 @@ export type { Visita, DatosNuevaVisita, DatosEditarVisita } from '../core/db/vis
 export type { TipoDocumento } from '../core/documento.js';
 export type { FiltrosVisitas, EstadoVisita } from '../core/db/filtros.js';
 export type { CampoVisita, MapeoColumnas, FilaValidada } from '../core/csv/importar.js';
+export type { Ajustes } from '../main/ajustes.js';
+export type { EstadoRespaldo } from '../main/respaldos.js';

@@ -5,12 +5,18 @@ import { abrirBaseDeDatos } from '../core/db/conexion.js';
 import { VisitasRepo } from '../core/db/visitasRepo.js';
 import { AlmacenAjustes } from './ajustes.js';
 import { Registro } from './log.js';
+import { GestorRespaldos } from './respaldos.js';
 import { registrarIpc } from './ipc.js';
+import type Database from 'better-sqlite3';
 
 // __dirname no existe en ESM; lo reconstruimos.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const ESTA_EN_DESARROLLO = !app.isPackaged;
+
+let respaldoAlCerrarHecho = false;
+let gestorRespaldosGlobal: GestorRespaldos | null = null;
+let rutaBaseDeDatosGlobal = '';
 
 // Una sola instancia: si ya hay una ventana abierta, enfocamos esa en vez de abrir otra.
 const obtuvoCandado = app.requestSingleInstanceLock();
@@ -48,9 +54,10 @@ function iniciarAplicacion(): void {
       }
     });
 
-    let db;
+    let db: Database.Database;
+    const rutaBaseDeDatos = path.join(carpetaDatos, 'visitas.db');
+    rutaBaseDeDatosGlobal = rutaBaseDeDatos;
     try {
-      const rutaBaseDeDatos = path.join(carpetaDatos, 'visitas.db');
       db = abrirBaseDeDatos(rutaBaseDeDatos);
       registro.info('Base de datos abierta correctamente', { ruta: rutaBaseDeDatos });
     } catch (error) {
@@ -60,9 +67,21 @@ function iniciarAplicacion(): void {
 
     const repo = new VisitasRepo(db);
     const ajustes = new AlmacenAjustes(carpetaDatos);
-    registrarIpc({ repo, ajustes, registro });
+    const gestorRespaldos = new GestorRespaldos(() => db, ajustes, registro, carpetaDatos);
+    gestorRespaldosGlobal = gestorRespaldos;
+    gestorRespaldos.iniciarRespaldoAutomatico();
+
+    registrarIpc({ repo, ajustes, registro, gestorRespaldos, rutaBaseDeDatos });
 
     crearVentanaPrincipal(registro);
+  });
+
+  // Respaldo automático al cerrar la app: se posterga el cierre real hasta que termine.
+  app.on('before-quit', (evento) => {
+    if (respaldoAlCerrarHecho || !gestorRespaldosGlobal) return;
+    evento.preventDefault();
+    respaldoAlCerrarHecho = true;
+    gestorRespaldosGlobal.respaldarAhora().finally(() => app.quit());
   });
 
   app.on('window-all-closed', () => {

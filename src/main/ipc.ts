@@ -1,18 +1,21 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { ipcMain, dialog, app } from 'electron';
 import fs from 'node:fs/promises';
 import type { VisitasRepo, DatosNuevaVisita, DatosEditarVisita } from '../core/db/visitasRepo.js';
 import type { FiltrosVisitas } from '../core/db/filtros.js';
 import { construirCsv, construirCsvGenerico, construirPlantillaCsv } from '../core/csv/exportar.js';
 import { construirHtmlReporte } from '../core/reporte/plantillaHtml.js';
 import { formatearFechaHora, ahoraIsoPanama } from '../core/fechas.js';
-import type { AlmacenAjustes } from './ajustes.js';
+import type { AlmacenAjustes, Ajustes } from './ajustes.js';
 import type { Registro } from './log.js';
+import type { GestorRespaldos } from './respaldos.js';
 import { generarPdfDesdeHtml } from './pdf.js';
 
 type Dependencias = {
   repo: VisitasRepo;
   ajustes: AlmacenAjustes;
   registro: Registro;
+  gestorRespaldos: GestorRespaldos;
+  rutaBaseDeDatos: string;
 };
 
 const BOM_UTF8 = '﻿';
@@ -66,7 +69,7 @@ function manejador<T extends unknown[], R>(
  * Etapa (b): registro de entrada/salida y el panel "Dentro ahora".
  * El historial, exportar/importar y respaldos añaden sus propios canales después.
  */
-export function registrarIpc({ repo, ajustes, registro }: Dependencias): void {
+export function registrarIpc({ repo, ajustes, registro, gestorRespaldos, rutaBaseDeDatos }: Dependencias): void {
   ipcMain.handle(
     'visitas:dentroAhora',
     manejador(registro, 'visitas:dentroAhora', () => repo.dentroAhora()),
@@ -241,4 +244,64 @@ export function registrarIpc({ repo, ajustes, registro }: Dependencias): void {
   );
 
   ipcMain.handle('ajustes:leer', manejador(registro, 'ajustes:leer', () => ajustes.leer()));
+
+  ipcMain.handle(
+    'ajustes:guardar',
+    manejador(registro, 'ajustes:guardar', (parcial: Partial<Ajustes>) => ajustes.actualizar(parcial)),
+  );
+
+  ipcMain.handle(
+    'respaldos:elegirCarpeta',
+    manejador(registro, 'respaldos:elegirCarpeta', async () => {
+      const resultado = await dialog.showOpenDialog({
+        title: 'Elegir carpeta de respaldo',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (resultado.canceled || resultado.filePaths.length === 0) return null;
+      return resultado.filePaths[0];
+    }),
+  );
+
+  ipcMain.handle(
+    'respaldos:probarCarpeta',
+    manejador(registro, 'respaldos:probarCarpeta', (ruta: string) => gestorRespaldos.probarCarpeta(ruta)),
+  );
+
+  ipcMain.handle(
+    'respaldos:respaldarAhora',
+    manejador(registro, 'respaldos:respaldarAhora', () => gestorRespaldos.respaldarAhora()),
+  );
+
+  ipcMain.handle(
+    'respaldos:estado',
+    manejador(registro, 'respaldos:estado', () => gestorRespaldos.leerEstado()),
+  );
+
+  ipcMain.handle(
+    'respaldos:listar',
+    manejador(registro, 'respaldos:listar', () => gestorRespaldos.listarRespaldos()),
+  );
+
+  ipcMain.handle(
+    'respaldos:elegirArchivoParaRestaurar',
+    manejador(registro, 'respaldos:elegirArchivoParaRestaurar', async () => {
+      const resultado = await dialog.showOpenDialog({
+        title: 'Elegir respaldo a restaurar',
+        properties: ['openFile'],
+        filters: [{ name: 'Respaldo de base de datos', extensions: ['db'] }],
+      });
+      if (resultado.canceled || resultado.filePaths.length === 0) return null;
+      return resultado.filePaths[0];
+    }),
+  );
+
+  ipcMain.handle(
+    'respaldos:restaurar',
+    manejador(registro, 'respaldos:restaurar', async (rutaRespaldo: string) => {
+      await gestorRespaldos.restaurar(rutaRespaldo, rutaBaseDeDatos);
+      // La conexión SQLite ya se cerró; hace falta reiniciar la app para abrir el archivo restaurado.
+      app.relaunch();
+      app.exit(0);
+    }),
+  );
 }

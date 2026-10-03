@@ -32,6 +32,7 @@ const api = {
   },
   ajustes: {
     leer: () => ipcRenderer.invoke('ajustes:leer'),
+    guardar: (parcial: unknown) => ipcRenderer.invoke('ajustes:guardar', parcial),
   },
   exportar: {
     csv: (filtros: unknown) => ipcRenderer.invoke('exportar:csv', filtros),
@@ -39,6 +40,15 @@ const api = {
     plantillaCsv: () => ipcRenderer.invoke('exportar:plantillaCsv'),
     filasConError: (filas: Array<Record<string, string>>, columnas: string[]) =>
       ipcRenderer.invoke('exportar:filasConError', filas, columnas),
+  },
+  respaldos: {
+    elegirCarpeta: () => ipcRenderer.invoke('respaldos:elegirCarpeta'),
+    probarCarpeta: (ruta: string) => ipcRenderer.invoke('respaldos:probarCarpeta', ruta),
+    respaldarAhora: () => ipcRenderer.invoke('respaldos:respaldarAhora'),
+    estado: () => ipcRenderer.invoke('respaldos:estado'),
+    listar: () => ipcRenderer.invoke('respaldos:listar'),
+    elegirArchivoParaRestaurar: () => ipcRenderer.invoke('respaldos:elegirArchivoParaRestaurar'),
+    restaurar: (ruta: string) => ipcRenderer.invoke('respaldos:restaurar', ruta),
   },
 };
 
