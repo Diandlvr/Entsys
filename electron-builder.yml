@@ -1,0 +1,33 @@
+appId: com.recepcion.registrodevisitas
+productName: Registro de Visitas
+copyright: Copyright © 2026
+
+directories:
+  output: dist-empaquetado
+  buildResources: build
+
+files:
+  - dist-electron/**/*
+  - dist/renderer/**/*
+  - package.json
+
+asarUnpack:
+  - "**/*.node"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  artifactName: ${productName} ${version} Instalador.${ext}
+
+portable:
+  artifactName: ${productName} ${version} Portable.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  artifactName: ${productName} ${version} Instalador.${ext}

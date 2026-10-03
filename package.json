@@ -23,19 +23,21 @@
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/dm-sans": "^5.3.0",
     "better-sqlite3": "^12.2.0",
     "papaparse": "^5.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.10.2",
     "@types/papaparse": "^5.3.15",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
-    "@electron/rebuild": "^3.7.1",
     "autoprefixer": "^10.4.20",
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",

@@ -114,6 +114,8 @@ function crearVentanaPrincipal(registro: Registro): void {
   if (ESTA_EN_DESARROLLO) {
     ventana.loadURL('http://localhost:5173');
   } else {
-    ventana.loadFile(path.join(__dirname, '../renderer/index.html'));
+    // Vite genera el renderer en dist/renderer, no junto al proceso principal compilado
+    // (dist-electron/main); por eso se sube dos niveles en vez de uno.
+    ventana.loadFile(path.join(__dirname, '../../dist/renderer/index.html'));
   }
 }
