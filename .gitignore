@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-electron/
+dist-packages/
+*.log
+.DS_Store
+Thumbs.db
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+.vite/
