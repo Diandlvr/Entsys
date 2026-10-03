@@ -262,4 +262,35 @@ export class VisitasRepo {
       .get(normalizado, entrada);
     return fila !== undefined;
   }
+
+  /**
+   * Importa varias visitas en una sola transacción: o entran todas, o ninguna.
+   * Para las filas marcadas como duplicadas, aplica la acción elegida (omitir o reemplazar
+   * la visita existente con el mismo documento y entrada exacta).
+   */
+  importarLote(
+    filas: Array<{ datos: DatosNuevaVisita; esDuplicado: boolean }>,
+    accionDuplicados: 'omitir' | 'reemplazar',
+  ): { insertadas: number; omitidas: number } {
+    const transaccion = this.db.transaction(() => {
+      let insertadas = 0;
+      let omitidas = 0;
+      for (const fila of filas) {
+        if (fila.esDuplicado) {
+          if (accionDuplicados === 'omitir') {
+            omitidas++;
+            continue;
+          }
+          const documento = normalizarDocumento(fila.datos.documento);
+          this.db
+            .prepare('DELETE FROM visitas WHERE documento = ? AND entrada = ?')
+            .run(documento, fila.datos.entrada);
+        }
+        this.crear(fila.datos);
+        insertadas++;
+      }
+      return { insertadas, omitidas };
+    });
+    return transaccion();
+  }
 }

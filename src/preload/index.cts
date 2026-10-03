@@ -21,9 +21,24 @@ const api = {
       ipcRenderer.invoke('visitas:sugerencias', campo, textoParcial),
     eliminar: (id: number) => ipcRenderer.invoke('visitas:eliminar', id),
     restaurarEliminada: (visita: unknown) => ipcRenderer.invoke('visitas:restaurarEliminada', visita),
+    buscar: (filtros: unknown) => ipcRenderer.invoke('visitas:buscar', filtros),
+    editar: (id: number, datos: unknown) => ipcRenderer.invoke('visitas:editar', id, datos),
+    existeDuplicado: (documento: string, entrada: string) =>
+      ipcRenderer.invoke('visitas:existeDuplicado', documento, entrada),
+    importarLote: (
+      filas: Array<{ datos: unknown; esDuplicado: boolean }>,
+      accionDuplicados: 'omitir' | 'reemplazar',
+    ) => ipcRenderer.invoke('visitas:importarLote', filas, accionDuplicados),
   },
   ajustes: {
     leer: () => ipcRenderer.invoke('ajustes:leer'),
+  },
+  exportar: {
+    csv: (filtros: unknown) => ipcRenderer.invoke('exportar:csv', filtros),
+    pdf: (filtros: unknown) => ipcRenderer.invoke('exportar:pdf', filtros),
+    plantillaCsv: () => ipcRenderer.invoke('exportar:plantillaCsv'),
+    filasConError: (filas: Array<Record<string, string>>, columnas: string[]) =>
+      ipcRenderer.invoke('exportar:filasConError', filas, columnas),
   },
 };
 
