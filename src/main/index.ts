@@ -97,6 +97,10 @@ function crearVentanaPrincipal(registro: Registro): void {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
+    // Empaquetado, el ícono ya va incrustado en el .exe (ver electron-builder.yml) y
+    // build/ no viaja dentro del paquete. Esto solo cubre el modo desarrollo
+    // (npm start / npm run dev), donde si no se fija Windows muestra el ícono genérico.
+    ...(ESTA_EN_DESARROLLO ? { icon: path.join(__dirname, '../../build/icon.ico') } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
