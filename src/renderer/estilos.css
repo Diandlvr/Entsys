@@ -2,10 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tokens de diseño. Los colores van como canales "R G B" para que Tailwind
+ * pueda aplicar opacidad (bg-acento/10). El modo oscuro solo redefine los
+ * tokens: los componentes no necesitan variantes dark:.
+ */
+:root {
+  color-scheme: light;
+
+  --fondo: 243 246 250;
+  --tarjeta: 255 255 255;
+  --tarjeta-suave: 237 242 248;
+  --tinta: 20 32 46;
+  --tinta-suave: 78 94 114;
+  --tinta-tenue: 115 130 149;
+  --borde: 220 227 236;
+  --borde-fuerte: 178 190 206;
+
+  --acento: 30 78 140;
+  --acento-fuerte: 23 62 112;
+  --acento-tinte: 228 238 250;
+  --acento-texto: 30 78 140;
+  --acento-2: 91 132 177;
+  --sobre-acento: 255 255 255;
+
+  --aviso: 146 88 8;
+  --aviso-tinte: 255 246 224;
+  --aviso-borde: 232 196 120;
+
+  --peligro: 176 42 42;
+  --peligro-fuerte: 143 30 30;
+  --peligro-tinte: 253 236 236;
+  --peligro-borde: 232 160 160;
+
+  --exito: 24 114 74;
+  --exito-tinte: 228 245 236;
+
+  --velo-banner: 12 28 54;
+
+  --radio-tarjeta: 20px;
+  --radio-control: 12px;
+  --radio-pill: 9999px;
+
+  --espacio-pantalla: 2rem;
+  --espacio-tarjeta: 1.5rem;
+  --espacio-campos: 0.875rem;
+
+  --sombra-tarjeta: 0 1px 2px rgb(20 32 46 / 0.04);
+  --sombra-flotante: 0 12px 32px rgb(12 28 54 / 0.18);
+
+  --duracion: 200ms;
+  --curva: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --fondo: 15 23 34;
+  --tarjeta: 23 34 50;
+  --tarjeta-suave: 30 44 64;
+  --tinta: 233 239 247;
+  --tinta-suave: 170 184 203;
+  --tinta-tenue: 134 150 172;
+  --borde: 44 60 84;
+  --borde-fuerte: 74 94 122;
+
+  --acento: 110 163 224;
+  --acento-fuerte: 140 185 236;
+  --acento-tinte: 30 52 84;
+  --acento-texto: 150 192 240;
+  --acento-2: 70 108 156;
+  --sobre-acento: 10 20 36;
+
+  --aviso: 240 196 112;
+  --aviso-tinte: 52 40 16;
+  --aviso-borde: 120 92 36;
+
+  --peligro: 242 140 140;
+  --peligro-fuerte: 255 170 170;
+  --peligro-tinte: 58 28 32;
+  --peligro-borde: 130 62 66;
+
+  --exito: 110 210 160;
+  --exito-tinte: 22 52 44;
+
+  --velo-banner: 6 14 28;
+
+  --sombra-tarjeta: none;
+  --sombra-flotante: 0 12px 32px rgb(0 0 0 / 0.5);
+}
+
 html {
-  color-scheme: light dark;
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 body {
-  @apply bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-50;
+  @apply bg-fondo text-tinta antialiased;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Barras de desplazamiento finas y discretas; se acentúan al pasar el ratón. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--borde-fuerte)) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--borde-fuerte));
+  border-radius: var(--radio-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--tinta-tenue));
+  background-clip: padding-box;
+}
+
+/* Foco visible y coherente para teclado en toda la app. */
+:focus-visible {
+  outline: 2px solid rgb(var(--acento));
+  outline-offset: 2px;
+}
+
+/* Cifras de tablas y horas: ancho fijo para que no "bailen". */
+.cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Título de pantalla: serif elegante, con una parte en cursiva. */
+.titulo-pantalla {
+  @apply font-titulo font-medium leading-tight tracking-tight;
+}
+.titulo-pantalla em {
+  @apply font-medium italic;
+}
+
+/*
+ * Banner de Registro: fachada desenfocada + velo azul marino.
+ * Para usar una foto real, define --banner-imagen en :root, por ejemplo
+ * url('./assets/recepcion.jpg'); el velo y el desenfoque se mantienen.
+ */
+.banner-recepcion {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: rgb(var(--velo-banner));
+}
+.banner-recepcion::before {
+  content: '';
+  position: absolute;
+  inset: -24px;
+  z-index: -2;
+  background-image: var(--banner-imagen, url('./assets/fachada.svg'));
+  background-size: cover;
+  background-position: center;
+  filter: blur(7px);
+}
+.banner-recepcion::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, rgb(var(--velo-banner) / 0.92), rgb(var(--velo-banner) / 0.72));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

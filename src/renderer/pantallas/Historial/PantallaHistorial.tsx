@@ -17,11 +17,18 @@ const FILTROS_INICIALES: FiltrosVisitas = {
   offset: 0,
 };
 
+function hayFiltrosActivos(f: FiltrosVisitas): boolean {
+  return Boolean(
+    f.desde || f.hasta || f.documento || f.nombre || f.empresa || f.destino || f.aQuienVisita || (f.estado && f.estado !== 'todos'),
+  );
+}
+
 /** Historial: filtros combinables, tabla con orden/paginación, edición y eliminación con deshacer. */
 export function PantallaHistorial() {
   const [filtros, setFiltros] = useState<FiltrosVisitas>(FILTROS_INICIALES);
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [total, setTotal] = useState(0);
+  const [cargando, setCargando] = useState(true);
   const [visitaEditando, setVisitaEditando] = useState<Visita | null>(null);
   const [visitaAEliminar, setVisitaAEliminar] = useState<Visita | null>(null);
   const [mostrarExportar, setMostrarExportar] = useState(false);
@@ -32,6 +39,7 @@ export function PantallaHistorial() {
     window.api.visitas.buscar(filtros).then(({ visitas, total }) => {
       setVisitas(visitas);
       setTotal(total);
+      setCargando(false);
     });
   }, [filtros]);
 
@@ -57,7 +65,7 @@ export function PantallaHistorial() {
     setVisitaAEliminar(null);
     await window.api.visitas.eliminar(visita.id);
     recargar();
-    mostrarToast(`Visita de ${visita.nombre_completo} eliminada.`, {
+    mostrarToast(`Visita eliminada: ${visita.nombre_completo}`, {
       tipo: 'exito',
       accion: {
         etiqueta: 'Deshacer',
@@ -69,15 +77,27 @@ export function PantallaHistorial() {
     });
   }
 
+  function quitarFiltros() {
+    setFiltros({ ...FILTROS_INICIALES, orden: filtros.orden, direccion: filtros.direccion });
+  }
+
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">Historial</h1>
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="titulo-pantalla text-4xl text-tinta">
+            Historial de <em>entradas</em>
+          </h1>
+          <p className="mt-1 text-tinta-suave">Busca, corrige o exporta cualquier visita ya registrada.</p>
+        </div>
         <div className="flex gap-2">
           <Boton variante="secundario" onClick={() => setMostrarImportar(true)}>
-            Importar CSV
+            Importar desde CSV
           </Boton>
-          <Boton onClick={() => setMostrarExportar(true)}>Exportar (Ctrl+E)</Boton>
+          <Boton onClick={() => setMostrarExportar(true)}>
+            Exportar historial
+            <kbd className="font-sans text-xs opacity-75">Ctrl E</kbd>
+          </Boton>
         </div>
       </div>
 
@@ -87,34 +107,33 @@ export function PantallaHistorial() {
         visitas={visitas}
         total={total}
         filtros={filtros}
+        cargando={cargando}
+        hayFiltros={hayFiltrosActivos(filtros)}
         onCambiarFiltros={setFiltros}
+        onQuitarFiltros={quitarFiltros}
         onEditar={setVisitaEditando}
         onEliminar={setVisitaAEliminar}
       />
 
       <DialogoEditarVisita visita={visitaEditando} onCerrar={() => setVisitaEditando(null)} onGuardado={recargar} />
 
-      <Dialogo abierto={Boolean(visitaAEliminar)} titulo="Eliminar visita" onCerrar={() => setVisitaAEliminar(null)}>
-        <p className="text-slate-600 dark:text-slate-300">
-          ¿Eliminar la visita de <strong>{visitaAEliminar?.nombre_completo}</strong>? Podrás deshacerlo justo
-          después desde el mensaje de confirmación.
+      <Dialogo abierto={Boolean(visitaAEliminar)} titulo="¿Eliminar esta visita?" onCerrar={() => setVisitaAEliminar(null)}>
+        <p className="text-tinta-suave">
+          Vas a eliminar la visita de <strong className="font-semibold text-tinta">{visitaAEliminar?.nombre_completo}</strong>. Si
+          te equivocas, podrás deshacerlo desde el aviso que aparece justo después.
         </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Boton variante="secundario" onClick={() => setVisitaAEliminar(null)}>
+        <div className="mt-6 flex justify-end gap-2">
+          <Boton variante="secundario" onClick={() => setVisitaAEliminar(null)} data-autofocus>
             Cancelar
           </Boton>
           <Boton variante="peligro" onClick={confirmarEliminar}>
-            Eliminar
+            Eliminar visita
           </Boton>
         </div>
       </Dialogo>
 
-      {mostrarExportar && (
-        <PanelExportar filtros={filtros} onCerrar={() => setMostrarExportar(false)} />
-      )}
-      {mostrarImportar && (
-        <PanelImportar onCerrar={() => setMostrarImportar(false)} onImportado={recargar} />
-      )}
+      {mostrarExportar && <PanelExportar filtros={filtros} onCerrar={() => setMostrarExportar(false)} />}
+      {mostrarImportar && <PanelImportar onCerrar={() => setMostrarImportar(false)} onImportado={recargar} />}
     </div>
   );
 }

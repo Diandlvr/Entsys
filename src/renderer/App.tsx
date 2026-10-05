@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { BarraLateral } from './componentes/BarraLateral.js';
-import type { Seccion } from './componentes/BarraLateral.js';
+import { Cabecera } from './componentes/Cabecera.js';
+import type { Seccion } from './componentes/Cabecera.js';
 import { BarraEstadoRespaldo } from './componentes/BarraEstadoRespaldo.js';
 import { ProveedorToast } from './componentes/ui/Toast.js';
 import { PantallaRegistro } from './pantallas/Registro/PantallaRegistro.js';
@@ -21,7 +21,7 @@ export default function App() {
   // Tailwind usa la clase "dark" en <html>; para el tema automático seguimos la preferencia del sistema.
   useEffect(() => {
     const prefiereOscuro = window.matchMedia('(prefers-color-scheme: dark)');
-    let temaActual: Ajustes['tema'] = 'automatico';
+    let temaActual: Ajustes['tema'] = 'claro';
 
     function aplicarClaseOscura() {
       const esOscuro = temaActual === 'oscuro' || (temaActual === 'automatico' && prefiereOscuro.matches);
@@ -62,16 +62,20 @@ export default function App() {
 
   return (
     <ProveedorToast>
-      <div className="flex h-screen flex-col overflow-hidden bg-white dark:bg-slate-900">
+      <div className="flex h-screen flex-col overflow-hidden bg-fondo">
+        <a
+          href="#contenido"
+          className="sr-only rounded-control bg-acento px-4 py-2 text-acento-sobre focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[80]"
+        >
+          Saltar al contenido
+        </a>
         <BarraEstadoRespaldo />
-        <div className="flex flex-1 overflow-hidden">
-          <BarraLateral seccionActiva={seccion} onCambiarSeccion={setSeccion} />
-          <main className="flex-1 overflow-y-auto">
-            {seccion === 'registro' && <PantallaRegistro />}
-            {seccion === 'historial' && <PantallaHistorial />}
-            {seccion === 'ajustes' && <PantallaAjustes />}
-          </main>
-        </div>
+        <Cabecera seccionActiva={seccion} onCambiarSeccion={setSeccion} />
+        <main id="contenido" tabIndex={-1} className="flex-1 overflow-y-auto focus:outline-none">
+          {seccion === 'registro' && <PantallaRegistro />}
+          {seccion === 'historial' && <PantallaHistorial />}
+          {seccion === 'ajustes' && <PantallaAjustes />}
+        </main>
       </div>
     </ProveedorToast>
   );

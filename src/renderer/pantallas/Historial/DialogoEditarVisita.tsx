@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Boton } from '../../componentes/ui/Boton.js';
-import { CampoSelect, CampoTextArea, CampoTexto } from '../../componentes/ui/Campo.js';
+import { CampoTextArea, CampoTexto } from '../../componentes/ui/Campo.js';
 import { Dialogo } from '../../componentes/ui/Dialogo.js';
+import { GrupoSegmentado } from '../../componentes/ui/GrupoSegmentado.js';
 import { usarToast } from '../../componentes/ui/Toast.js';
 import { advertenciaFormatoDocumento, normalizarDocumento } from '../../../core/documento.js';
 import { isoPanamaALocalInput, localInputAIsoPanama } from '../../../core/fechas.js';
@@ -49,25 +50,31 @@ export function DialogoEditarVisita({ visita, onCerrar, onGuardado }: Propiedade
         salida: form.salida,
       };
       await window.api.visitas.editar(form.id, datos);
-      mostrarToast('Visita actualizada.', { tipo: 'exito' });
+      mostrarToast('Cambios guardados', { tipo: 'exito' });
       onGuardado();
       onCerrar();
     } catch {
-      mostrarToast('No se pudo guardar los cambios.', { tipo: 'error' });
+      mostrarToast('No se pudieron guardar los cambios. Revisa los datos e intenta de nuevo.', { tipo: 'error' });
     } finally {
       setGuardando(false);
     }
   }
 
   return (
-    <Dialogo abierto={Boolean(visita)} titulo="Editar visita" onCerrar={onCerrar}>
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <CampoSelect
+    <Dialogo abierto={Boolean(visita)} titulo="Editar visita" onCerrar={onCerrar} ancho="amplio">
+      <form
+        className="flex flex-col gap-campos"
+        onSubmit={(e) => {
+          e.preventDefault();
+          guardar();
+        }}
+      >
+        <div className="grid grid-cols-1 items-start gap-campos sm:grid-cols-[auto_minmax(0,1fr)]">
+          <GrupoSegmentado
             etiqueta="Tipo de documento"
             opciones={OPCIONES_TIPO_DOCUMENTO}
-            value={form.tipo_documento}
-            onChange={(e) => setForm({ ...form, tipo_documento: e.target.value as TipoDocumento })}
+            valor={form.tipo_documento}
+            onCambiar={(valor) => setForm({ ...form, tipo_documento: valor as TipoDocumento })}
           />
           <CampoTexto
             etiqueta="Documento"
@@ -77,45 +84,48 @@ export function DialogoEditarVisita({ visita, onCerrar, onGuardado }: Propiedade
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-campos sm:grid-cols-2">
           <CampoTexto
             etiqueta="Nombre completo"
             value={form.nombre_completo}
             onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })}
+            data-autofocus
           />
           <CampoTexto
             etiqueta="Empresa"
+            opcional
             value={form.empresa ?? ''}
             onChange={(e) => setForm({ ...form, empresa: e.target.value || null })}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-campos sm:grid-cols-2">
           <CampoTexto
             etiqueta="A quién visita"
             value={form.a_quien_visita}
             onChange={(e) => setForm({ ...form, a_quien_visita: e.target.value })}
           />
           <CampoTexto
-            etiqueta="Destino"
+            etiqueta="Piso u oficina"
             value={form.destino}
             onChange={(e) => setForm({ ...form, destino: e.target.value })}
           />
         </div>
 
         <CampoTexto
-          etiqueta="Motivo"
+          etiqueta="Motivo de la visita"
           value={form.motivo}
           onChange={(e) => setForm({ ...form, motivo: e.target.value })}
         />
 
         <CampoTextArea
           etiqueta="Observaciones"
+          opcional
           value={form.observaciones ?? ''}
           onChange={(e) => setForm({ ...form, observaciones: e.target.value || null })}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-campos sm:grid-cols-2">
           <CampoTexto
             etiqueta="Entrada"
             type="datetime-local"
@@ -129,19 +139,19 @@ export function DialogoEditarVisita({ visita, onCerrar, onGuardado }: Propiedade
             onChange={(e) =>
               setForm({ ...form, salida: e.target.value ? localInputAIsoPanama(e.target.value) : null })
             }
-            ayuda="Déjalo vacío si la persona sigue dentro."
+            ayuda="Déjala vacía si la persona sigue dentro."
           />
         </div>
 
         <div className="mt-2 flex justify-end gap-2">
-          <Boton variante="secundario" onClick={onCerrar}>
+          <Boton type="button" variante="secundario" onClick={onCerrar}>
             Cancelar
           </Boton>
-          <Boton onClick={guardar} disabled={guardando}>
-            {guardando ? 'Guardando…' : 'Guardar cambios'}
+          <Boton type="submit" cargando={guardando}>
+            Guardar cambios
           </Boton>
         </div>
-      </div>
+      </form>
     </Dialogo>
   );
 }

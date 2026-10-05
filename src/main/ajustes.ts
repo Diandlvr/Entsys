@@ -13,12 +13,12 @@ export type Ajustes = {
 };
 
 export const AJUSTES_POR_DEFECTO: Ajustes = {
-  nombreEdificio: 'Edificio',
+  nombreEdificio: 'P.H. Twist',
   carpetaRespaldo: null,
   frecuenciaRespaldoMinutos: 30,
   cantidadRespaldosAConservar: 30,
   separadorCsv: ',',
-  tema: 'automatico',
+  tema: 'claro',
   tamanoTexto: 'normal',
 };
 

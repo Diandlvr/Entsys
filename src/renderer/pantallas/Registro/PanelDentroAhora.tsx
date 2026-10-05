@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Boton } from '../../componentes/ui/Boton.js';
+import { IconoAviso, IconoSalida } from '../../componentes/ui/iconos.js';
+import { Pill } from '../../componentes/ui/Pill.js';
+import { Tarjeta } from '../../componentes/ui/Tarjeta.js';
 import { usarToast } from '../../componentes/ui/Toast.js';
 import { esDeDiaAnterior, formatearHora, tiempoTranscurrido } from '../../../core/fechas.js';
 import type { Visita } from '../../tipos.js';
@@ -11,11 +14,12 @@ type Propiedades = {
 
 /**
  * Lista de personas dentro ahora (sin salida registrada), con tiempo transcurrido
- * y botón grande para marcar la salida. Resalta las que quedaron abiertas de días
- * anteriores (probable olvido) y permite cerrarlas todas de una vez.
+ * y botón para marcar la salida. Resalta las que quedaron abiertas de días
+ * anteriores (probable olvido) y permite cerrarlas todas de una vez, con opción de deshacer.
  */
 export function PanelDentroAhora({ visitas, onCambio }: Propiedades) {
   const [, forzarActualizacion] = useState(0);
+  const [cerrandoLote, setCerrandoLote] = useState(false);
   const mostrarToast = usarToast();
 
   // Refresca el texto de "tiempo transcurrido" cada 30 segundos sin volver a pedir datos.
@@ -30,7 +34,7 @@ export function PanelDentroAhora({ visitas, onCambio }: Propiedades) {
     try {
       await window.api.visitas.marcarSalida(visita.id);
       onCambio();
-      mostrarToast(`Salida registrada: ${visita.nombre_completo}`, {
+      mostrarToast(`Salida marcada: ${visita.nombre_completo}`, {
         tipo: 'exito',
         accion: {
           etiqueta: 'Deshacer',
@@ -41,68 +45,97 @@ export function PanelDentroAhora({ visitas, onCambio }: Propiedades) {
         },
       });
     } catch {
-      mostrarToast('No se pudo registrar la salida.', { tipo: 'error' });
+      mostrarToast(`No se pudo marcar la salida de ${visita.nombre_completo}. Intenta de nuevo.`, { tipo: 'error' });
     }
   }
 
   async function cerrarAnterioresEnLote() {
+    const ids = visitasAnteriores.map((v) => v.id);
+    setCerrandoLote(true);
     try {
-      await window.api.visitas.marcarSalidaEnLote(visitasAnteriores.map((v) => v.id));
+      await window.api.visitas.marcarSalidaEnLote(ids);
       onCambio();
-      mostrarToast(`Se cerraron ${visitasAnteriores.length} visitas abiertas de días anteriores.`, {
+      mostrarToast(`Salidas marcadas: ${ids.length} ${ids.length === 1 ? 'visita' : 'visitas'} de días anteriores`, {
         tipo: 'exito',
+        accion: {
+          etiqueta: 'Deshacer',
+          alHacerClic: async () => {
+            for (const id of ids) await window.api.visitas.deshacerSalida(id);
+            onCambio();
+          },
+        },
       });
     } catch {
-      mostrarToast('No se pudo cerrar las visitas en lote.', { tipo: 'error' });
+      mostrarToast('No se pudieron marcar las salidas. Intenta de nuevo.', { tipo: 'error' });
+    } finally {
+      setCerrandoLote(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Dentro ahora</h2>
-        <span className="rounded-full bg-acento-100 px-3 py-1 text-sm font-semibold text-acento-700 dark:bg-acento-900 dark:text-acento-200">
+    <Tarjeta className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-titulo text-3xl font-medium text-tinta">Dentro ahora</h2>
+        <span
+          aria-label={`${visitas.length} ${visitas.length === 1 ? 'persona dentro' : 'personas dentro'}`}
+          className="cifras min-w-[2rem] rounded-pill bg-acento-tinte px-3 py-0.5 text-center text-sm font-semibold text-acento-texto"
+        >
           {visitas.length}
         </span>
       </div>
 
       {visitasAnteriores.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 dark:border-amber-700 dark:bg-amber-950">
-          <span className="text-sm text-amber-800 dark:text-amber-200">
-            {visitasAnteriores.length} {visitasAnteriores.length === 1 ? 'visita' : 'visitas'} sin salida de días
-            anteriores (probable olvido).
-          </span>
-          <Boton variante="secundario" onClick={cerrarAnterioresEnLote} className="shrink-0">
-            Cerrar todas
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-aviso-borde bg-aviso-tinte px-4 py-3">
+          <p className="flex flex-1 items-start gap-2 text-sm text-aviso">
+            <IconoAviso className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              {visitasAnteriores.length === 1
+                ? 'Hay 1 visita de un día anterior sin salida.'
+                : `Hay ${visitasAnteriores.length} visitas de días anteriores sin salida.`}{' '}
+              Seguramente se olvidó marcarla.
+            </span>
+          </p>
+          <Boton variante="secundario" onClick={cerrarAnterioresEnLote} cargando={cerrandoLote} className="shrink-0">
+            {visitasAnteriores.length === 1
+              ? 'Marcar su salida ahora'
+              : `Marcar las ${visitasAnteriores.length} salidas ahora`}
           </Boton>
         </div>
       )}
 
       {visitas.length === 0 ? (
-        <p className="py-8 text-center text-slate-500 dark:text-slate-400">Aún no hay visitas dentro.</p>
+        <div className="py-10 text-center">
+          <p className="font-titulo text-2xl text-tinta">Nadie dentro por ahora</p>
+          <p className="mx-auto mt-1 max-w-xs text-sm text-tinta-suave">
+            Cuando registres una entrada, la persona aparecerá aquí para que marques su salida más tarde.
+          </p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2 overflow-y-auto">
+        <ul className="flex flex-col divide-y divide-borde">
           {visitas.map((visita) => {
             const esAnterior = esDeDiaAnterior(visita.entrada);
             return (
-              <li
-                key={visita.id}
-                className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${
-                  esAnterior
-                    ? 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950'
-                    : 'border-slate-200 dark:border-slate-700'
-                }`}
-              >
+              <li key={visita.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-800 dark:text-slate-100">
-                    {visita.nombre_completo}
+                  <p className="flex flex-wrap items-center gap-x-2">
+                    <span className="truncate font-medium text-tinta">{visita.nombre_completo}</span>
+                    {esAnterior && <Pill tono="aviso">De un día anterior</Pill>}
                   </p>
-                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">
-                    {visita.destino} · {visita.a_quien_visita} · entró {formatearHora(visita.entrada)} · hace{' '}
-                    {tiempoTranscurrido(visita.entrada)}
+                  <p className="cifras flex flex-wrap gap-x-3 text-sm text-tinta-suave">
+                    <span>{visita.destino}</span>
+                    <span>{visita.a_quien_visita}</span>
+                    <span className="text-tinta-tenue">
+                      {formatearHora(visita.entrada)}, hace {tiempoTranscurrido(visita.entrada)}
+                    </span>
                   </p>
                 </div>
-                <Boton onClick={() => marcarSalida(visita)} className="shrink-0">
+                <Boton
+                  variante="fantasma"
+                  onClick={() => marcarSalida(visita)}
+                  aria-label={`Marcar salida de ${visita.nombre_completo}`}
+                  className="shrink-0 border border-borde !min-h-[2.25rem] !px-3 hover:border-borde-fuerte"
+                >
+                  <IconoSalida className="h-4 w-4" />
                   Marcar salida
                 </Boton>
               </li>
@@ -110,6 +143,6 @@ export function PanelDentroAhora({ visitas, onCambio }: Propiedades) {
           })}
         </ul>
       )}
-    </div>
+    </Tarjeta>
   );
 }
